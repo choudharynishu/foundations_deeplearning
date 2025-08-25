@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "neural-network-from-scratch"
+version = "0.1.0"
+description = "From-scratch implementations of neural networks"
+authors = ["Nishu Choudhary <cnishu17@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
