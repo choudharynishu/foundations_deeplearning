@@ -73,7 +73,10 @@ def visualize(activation_fn: Activation, x: Tensor):
 ncols = 3
 nrows = len(activation_fn_name)//ncols
 col, row = 1, 1
-fig = make_subplots(rows=nrows, cols=ncols)
+showlegend_val=True
+fig = make_subplots(rows=nrows, cols=ncols,
+                    subplot_titles=list(activation_fn_name.keys()),
+                    vertical_spacing = 0.1)
 
 for key, values in activation_fn_name.items():
     activation_fn = values()
@@ -83,17 +86,30 @@ for key, values in activation_fn_name.items():
     x_grads = get_gradients(activation_fn, x)
 
     fig.add_trace(go.Scatter(x=x.numpy(), y=y_values.numpy(),
-                             line=dict(color="red",width=2)),
+                             line=dict(color="red",width=2),
+                             name='Activation Function',
+                             legendgroup='Activation Function',
+                             showlegend=showlegend_val),
                   row=row, col=col)
 
     fig.add_trace(go.Scatter(x=x.numpy(), y=x_grads.numpy(),
-                             line=dict(color="green",width=2)),
+                             line=dict(color="green",width=2),
+                             name='Gradients',
+                             legendgroup='Gradient',
+                             showlegend=showlegend_val),
                   row=row, col=col)
 
     if col==ncols:
         row+=1
     col = col + 1 if col < ncols else 1
+    showlegend_val=False
 
+fig.update_yaxes(range=[-3,3])
 fig.update_layout(title="Activation Functions and their Gradients",
-                  showlegend=False)
+                  legend=dict(orientation="h",
+                              yanchor="top",
+                              y=1.10,
+                              xanchor="right",
+                              x=1),
+                  )
 fig.write_html(f"activationFunctions_gradients.html")
