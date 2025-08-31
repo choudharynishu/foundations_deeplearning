@@ -1,10 +1,20 @@
+import os
+import json
 import torch
-import torch.nn as nn
+import numpy as np
 
-from torch import Tensor
-from utils import get_gradients
+from tqdm import tqdm
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
 import plotly.graph_objects as go
+
 from plotly.subplots import make_subplots
+from src.model import BaseNetwork
+from config.config import settings
+from src.preprocessing import preprocess_data
+from src.utils import get_gradients, get_model_file, get_config_file, set_seed
+
 
 class Activation(nn.Module):
     def __init__(self):
@@ -60,15 +70,10 @@ class Swish(Activation):
 activation_fn_name= {'elu': ELU,
                      'relu': ReLU,
                      'sigmoid': Sigmoid,
-                     'leaky_relu': LeakyReLU,
+                     'leakyrelu': LeakyReLU,
                      'tanh': Tanh,
                      'swish': Swish
                      }
-
-
-def visualize(activation_fn: Activation, x: Tensor):
-    y_values = activation_fn(x)
-    x_grads = get_gradients(activation_fn, x)
 
 ncols = 3
 nrows = len(activation_fn_name)//ncols
@@ -113,3 +118,141 @@ fig.update_layout(title="Activation Functions and their Gradients",
                               x=1),
                   )
 fig.write_html(f"activationFunctions_gradients.html")
+
+def load_file(NeuralNet, model_name):
+    """
+        Load a neural network and its configuration from saved files.
+
+        This function reads a JSON configuration file and a corresponding
+        model checkpoint file. It initializes the neural network with the
+        specified architecture and activation function, and then loads
+        the trained weights.
+
+        Parameters
+        ----------
+        NeuralNet : torch.nn.Module or None
+            A neural network instance. If None, a new network is initialized
+            using the configuration file.
+        model_name : str
+            The name of the model to load. Used to locate configuration and
+            checkpoint files.
+
+        Returns
+        -------
+        torch.nn.Module
+            The neural network with loaded weights.
+    """
+    config_file, model_file = get_config_file(model_name), get_model_file(model_name)
+
+    with open(config_file, 'r') as f:
+        config_dict = json.load(f)
+
+    if NeuralNet:
+        activation_fn_title = config_dict['act_fn'].pop('name').lower()
+        activation_fn = activation_fn_name[activation_fn_title](**config_dict.pop("act_fn"))
+        NeuralNet = BaseNetwork(input_dim = settings.input_dimension,
+                                hidden_layers = settings.hidden_layers,
+                                n_classes = settings.num_classes,
+                                activation_fn = activation_fn)
+
+
+    NeuralNet.load_state_dict(torch.load(model_file, map_location=torch.device('cpu')))
+
+    return NeuralNet
+
+def save_model(NeuralNet: BaseNetwork, model_name: str):
+    """
+    Given a model, this function save the state_dict and hyperparameters.
+
+    Inputs:
+        NeuralNet - Network object to save parameters from
+        model_name - Name of the model (str)
+    """
+    model_path = os.path.join(settings.model_dir, model_name+".tar")
+    torch.save(NeuralNet.state_dict(), model_path)
+
+def train(NeuralNet: BaseNetwork|None=None,
+          model_name: str|None=None,
+          max_epochs: int|None=None,
+          patience: int|None=None,
+          batch_size: int|None=None,
+          overwrite:bool=False):
+
+    # If trained model file (state dictionary) exists skip training unless specified to overwrite
+    modelfile_exists = os.path.isfile(os.path.join(settings.model_dir, model_name+".tar"))
+    train_loader, val_loader, test_loader = preprocess_data()
+
+    if modelfile_exists and not overwrite:
+        print("Model file already exists. Skipping training...")
+
+    else:
+        if modelfile_exists:
+            print("Model file exists, but will be overwritten...")
+
+        optimizer = optim.SGD(NeuralNet.parameters(),
+                                  lr=settings.learning_rate,
+                                  momentum=settings.momentum)
+
+        loss = nn.CrossEntropyLoss()
+        NeuralNet.train()
+        if max_epochs is None:
+            max_epochs = settings.max_epochs
+        if patience is None:
+            patience = settings.patience
+        val_score = []
+        best_val_epoch = -1
+
+        for epoch in range(max_epochs):
+            train_score = []
+            for images, labels, in tqdm(train_loader, desc=f"Epoch {epoch+1}"):
+                pred = NeuralNet(images)
+                loss_val = loss(pred, labels)
+
+                optimizer.zero_grad()
+                loss_val.backward()
+                optimizer.step()
+
+                true_preds = (pred.argmax(dim=-1)==labels).sum()
+                count =labels.shape[0]
+                train_score.append(true_preds/count)
+
+            train_accuracy = np.mean(train_score)
+            val_accuracy = test_model(NeuralNet, val_loader)
+            val_score.append(val_accuracy)
+
+            print(f"[Epoch {epoch + 1:2d}] Training accuracy: {train_accuracy * 100.0:05.2f}%,"
+                  f" Validation accuracy: {val_accuracy * 100.0:05.2f}%")
+
+            if len(val_score) == 1 or val_accuracy > val_score[best_val_epoch]:
+                print("\t   (New best performance, saving model...)")
+                save_model(NeuralNet, model_name)
+                best_val_epoch = epoch
+            elif best_val_epoch <= epoch - patience:
+                print(f"Early stopping due to no improvement over the last {patience} epochs")
+                break
+
+
+    NeuralNet = load_file(NeuralNet, model_name)
+    test_accuracy = test_model(NeuralNet, test_loader)
+    print(f" Test accuracy: {test_accuracy * 100.0:4.2f}% ")
+    return test_accuracy
+
+def test_model(NeuralNet:BaseNetwork, val_loader: DataLoader):
+    NeuralNet.eval()
+    with torch.no_grad():
+        val_accuracy = []
+        for images, labels in val_loader:
+            pred = NeuralNet(images)
+            true_preds = (pred.argmax(dim=-1) == labels).sum()
+            count = labels.shape[0]
+            val_accuracy.append(true_preds / count)
+
+    return np.mean(val_accuracy)
+
+def run_activation_fns():
+    for act_fn_name in activation_fn_name:
+        print(f"Training BaseNetwork with {act_fn_name} activation...")
+        set_seed(42)
+        act_fn = activation_fn_name[act_fn_name]()
+        network_actfn = BaseNetwork(act_fn)
+        accuracy = train(network_actfn, f"FashionMNIST_{act_fn_name}", overwrite=False)
