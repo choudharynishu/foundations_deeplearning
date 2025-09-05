@@ -1,5 +1,6 @@
-from src.activationfunctions import run_activation_fns
+from src.activationfunctions import run_activation_fns, diagnose_run
 
 
 if __name__=="__main__":
-    run_activation_fns()
+    #run_activation_fns()
+    diagnose_run('relu')
