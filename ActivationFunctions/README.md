@@ -35,8 +35,8 @@ internally applies LogSoftmax. This can shrink gradients, but the architecture h
 
 The most likely issue is activation saturation, shown by the gradient distributions in case of two activation functions, 
 Sigmoid and ReLU. Top (ReLU) Bottom (Sigmoid)
-![ReLU-Gradient_evolution](ActivationFunctions/gradient_evolution_relu.gif)
-![Sigmoid-Gradient_evolution](ActivationFunctions/gradient_evolution_sigmoid.gif)
+![ReLU-Gradient_evolution](https://github.com/choudharynishu/foundations_deeplearning/blob/main/ActivationFunctions/gradient_evolution_relu.gif)
+![Sigmoid-Gradient_evolution](https://github.com/choudharynishu/foundations_deeplearning/blob/main/ActivationFunctions/gradient_evolution_sigmoid.gif)
 
 These two gradient plots show a critical difference: 
 - ReLU maintains healthy gradient flow across all layers, enabling effective network-wide learning. 
