@@ -19,7 +19,7 @@ as the input values become highly positive (“exploding gradient”). In contra
 that saturate for large positive or negative inputs, potentially causing vanishing gradients. Swish is somewhat intermediate, 
 since it retains smoothness but can still suffer from unbounded growth on the positive side.
 
-![Activation-Functions](ActivationFunctions/ActivationFunctions.png)
+![Activation-Functions](https://github.com/choudharynishu/foundations_deeplearning/blob/main/ActivationFunctions/ActivationFunctions.png)
  
 Performance Metrics: The behavior of each trained network will be assessed through test set accuracy. 
 Observations: All activations show similar accuracy of around 88.23 % except for Sigmoid for which it is around 10%. 
