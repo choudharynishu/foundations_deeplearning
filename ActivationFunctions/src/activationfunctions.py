@@ -243,7 +243,7 @@ def train(NeuralNet: BaseNetwork|None=None,
 
             if diagnose and epoch==9:
                 frames = [imageio.imread(filename) for filename in gif_image_list]
-                gif_path = os.path.join(settings.data_dir,"gradient_evolution.gif")
+                gif_path = os.path.join(settings.data_dir,"gradient_evolution_relu.gif")
                 imageio.mimsave(gif_path, frames, fps=10)  # fps is frames per second
 
                 print(f"GIF saved to {gif_path}")
