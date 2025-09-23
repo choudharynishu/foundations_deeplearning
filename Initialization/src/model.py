@@ -32,8 +32,7 @@ class BaseNetwork(nn.Module):
 
     def _register_hooks(self):
         for name, param in self.named_parameters():
-            param.register_hook(lambda grad, name=name, self._save_gradient(grad,name))
-
+            param.register_hook(lambda grad, name=name: self._save_gradient(grad,name))
 
     def _save_gradient(self, grad, name):
         if grad is not None:
