@@ -3,6 +3,7 @@ import torchvision
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
+from numpy.linalg.linalg import LinAlgError
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Dataset, random_split
 
@@ -33,16 +34,19 @@ def plot_distributions(input_dict:dict, xlabel:str|None=None,
         fig.add_trace(go.Histogram(x=values, name=f"{key}"), row=1, col=curr_col)
 
         if use_kde:
-            kde_kernels = gaussian_kde(values)
-            x_grid = np.linspace(min(values), max(values), 300)
-            kde_values = kde_kernels(x_grid)
-            fig.add_trace(go.Scatter(x=x_grid, y=kde_values, name=f"KDE - {key}"), row=2, col=curr_col)
+            try:
+                kde_kernels = gaussian_kde(values)
+                x_grid = np.linspace(min(values), max(values), 300)
+                kde_values = kde_kernels(x_grid)
+                fig.add_trace(go.Scatter(x=x_grid, y=kde_values, name=f"KDE - {key}"), row=2, col=curr_col)
+            except LinAlgError:
+                continue
 
         curr_col+=1
 
-    if print_variance:
-        for key in sorted(input_dict.keys()):
-            print(f"{key} - Variance: {np.var(input_dict[key])}")
+    # if print_variance:
+    #     for key in sorted(input_dict.keys()):
+    #         print(f"{key} - Variance: {np.var(input_dict[key])}")
     #fig.update_layout(yaxis=dict(range=[0,8]))
     return fig
 
@@ -51,6 +55,7 @@ def visualize_gradients(model:BaseNetwork, train_dataset:Dataset,
 
     model.eval()
     train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=False)
+
     images, labels = next(iter(train_loader))
     pred = model(images)
 

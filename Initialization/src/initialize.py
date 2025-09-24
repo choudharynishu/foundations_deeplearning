@@ -26,12 +26,17 @@ def xavier_initialize(model: BaseNetwork):
 
 def kaiming_initialize(model: BaseNetwork):
     for name, param in model.named_parameters():
+        print(f"Xavier Parameter shape: {param.shape}")
         if "bias" in name:
             param.data.fill_(0)
-        elif name.startswith("layers.0"):
-            param.data.normal_(0, 1/math.sqrt(param.shape[1]))
         else:
-            param.data.normal_(0, math.sqrt(2)/math.sqrt(param.shape[1]))
+            fan_in = param.shape[1]  # works for Linear
+            std = math.sqrt(2.0 / fan_in)
+            param.data.normal_(0, std)
+        # elif name.startswith("layers.0"):
+        #     param.data.normal_(0, 1/math.sqrt(param.shape[1]))
+        # else:
+        #     param.data.normal_(0, math.sqrt(2)/math.sqrt(param.shape[1]))
     return model
 
 # Dispatcher mapping strings to functions
@@ -43,7 +48,7 @@ initialize_dispatcher = {
 }
 
 def initialize(initialization:str='kaiming', *args, **kwargs):
-    model = BaseNetwork(nn.Tanh())
+    model = BaseNetwork(nn.ReLU())
     if initialization not in initialize_dispatcher:
         raise ValueError(f"Unknown initialization method: {initialization}")
     return initialize_dispatcher[initialization](model, *args, **kwargs)
