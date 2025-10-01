@@ -3,11 +3,12 @@ import json
 import torch
 import numpy as np
 import torch.nn as nn
-
 from src.model import BaseNetwork
 from config.config import settings
 from src.trainer import train
 import src.optimizer as optimizer
+from src.pathological_curve import plot_weights
+
 
 # Function for setting the seed
 def set_seed(seed=settings.seed):
@@ -31,3 +32,4 @@ model = BaseNetwork(nn.Tanh())
 Adam_results = train(model, "FashionMNIST_Adam",
                            lambda params: optimizer.Adam(params, lr=1e-3),
                            max_epochs=40, batch_size=256)
+plot_weights()
