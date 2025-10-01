@@ -4,7 +4,7 @@ import torch
 import torchvision
 
 import torch.nn as nn
-from plotly.graph_objs import go
+import plotly.graph_objects as go
 from torchvision import datasets, transforms
 from torch.utils.data import random_split, DataLoader
 
@@ -39,10 +39,7 @@ def load_model(model_path: str, model_name: str, NeuralNet: BaseNetwork):
     return NeuralNet
 
 def save_model(NeuralNet: BaseNetwork, model_path:str, model_name:str):
-    if NeuralNet is None:
-       NeuralNet = load_model(model_path, model_name, NeuralNet=None)
     config_dict = NeuralNet.config
-
     config_file = _get_config_file(model_path, model_name)
     model_file = _get_model_file(model_path, model_name)
 
@@ -87,12 +84,11 @@ def train(NeuralNet:BaseNetwork, model_name: str, optimizer_func,
             NeuralNet = load_model(model_path=settings.model_dir,
                                model_name= model_name)
 
-        optimizer = optimizer_func(NeuralNet.parameter,
-                                   learning_rate = settings.learning_rate)
+        optimizer = optimizer_func(NeuralNet.parameters())
 
         loss = nn.CrossEntropyLoss()
 
-        train_loader = DataLoader(train_data, batch_size=settings.batch_size,
+        train_loader = DataLoader(train_data, batch_size=batch_size,
                                   shuffle=True, drop_last=False)
         NeuralNet.train()
 
@@ -101,7 +97,7 @@ def train(NeuralNet:BaseNetwork, model_name: str, optimizer_func,
         train_losses, train_scores = [], []
         best_val_epoch = -1
 
-        for epoch in max_epochs:
+        for epoch in range(max_epochs):
             true_pred, count = 0, 0
             for images, labels in train_loader:
                 preds = NeuralNet(images)
@@ -116,7 +112,6 @@ def train(NeuralNet:BaseNetwork, model_name: str, optimizer_func,
 
             train_acc = true_pred / count
             train_scores.append(train_acc)
-            train_losses.append()
 
             validation_accuracy = test(NeuralNet, validation_data)
             val_scores.append(validation_accuracy)
@@ -138,12 +133,12 @@ def train(NeuralNet:BaseNetwork, model_name: str, optimizer_func,
     fig = go.Figure()
     fig.add_trace(go.Scatter(y=results["train_scores"], name="Train Accuracy"))
     fig.add_trace(go.Scatter(y=results["val_scores"], name="Validation Accuracy"))
-    fig.update_trace(
+    fig.update_layout(
         title=f"Validation performance of {model_name}",
         xaxis = dict(title=f"Epochs"),
         yaxis = dict(title=f"Accuracy")
     )
-    fig.write_html(settings.artifacts, f"validation_accuracy_{model_name}")
+    fig.write_html(os.path.join(settings.artifacts, f"validation_accuracy_{model_name}.html"))
     return results
 
 def test(NeuralNet, test_data: datasets):

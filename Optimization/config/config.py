@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     input_dim: int
     hidden_layers: list[int]
     num_classes: int
-    batchsize: int
+    batch_size: int
     train_val_split: float
     learning_rate: float
     momentum: float

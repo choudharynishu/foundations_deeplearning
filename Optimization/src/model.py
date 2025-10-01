@@ -20,7 +20,7 @@ class BaseNetwork(nn.Module):
         self.layers = nn.Sequential(*layers)
         self.gradients = {}  # Store gradients for diagnosis
 
-        self.config = {'input_dim': input_dim, 'activation_function': activation_function,
+        self.config = {'input_dim': input_dim, 'activation_function': type(activation_function).__name__,
                        'hidden_layers': hidden_layers, 'num_classes': num_classes}
         self._register_hooks()
 
