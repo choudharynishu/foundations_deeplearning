@@ -25,7 +25,7 @@ def comb_func(w1, w2):
     return z
 
 def plot_curve(curve_function, x_range=(-5,5), y_range=(-5,5),
-               title="BivarGaussian"):
+               title="Pathological Curve"):
     x = torch.arange(x_range[0], x_range[1], (x_range[1] - x_range[0]) / 100.)
     y = torch.arange(y_range[0], y_range[1], (y_range[1] - y_range[0]) / 100.)
     x, y = torch.meshgrid(x, y, indexing='xy')
@@ -50,7 +50,7 @@ def plot_curve(curve_function, x_range=(-5,5), y_range=(-5,5),
     fig.write_html(os.path.join(settings.artifacts, f"{title}.html"))
     return fig
 
-def train_curve(optimizer_func, curve_func=comb_func, num_updates=100, init=[-1,-1]):
+def train_curve(optimizer_func, curve_func=pathological_curve_loss, num_updates=100, init=[5,5]):
     weights = nn.Parameter(torch.FloatTensor(init), requires_grad=True)
     optimizer = optimizer_func([weights])
 
@@ -71,7 +71,7 @@ def plot_weights():
     Adam_points = train_curve(lambda params: optimizer.Adam(params, lr=1))
     all_points = np.concatenate([SGD_points, SGDMom_points, Adam_points], axis=0)
 
-    figure = plot_curve(comb_func,
+    figure = plot_curve(pathological_curve_loss,
                     x_range=(-np.absolute(all_points[:, 0]).max(), np.absolute(all_points[:, 0]).max()),
                     y_range=(all_points[:, 1].min(), all_points[:, 1].max()))
 
@@ -81,4 +81,4 @@ def plot_weights():
                                   name="SGDMom"))
     figure.add_trace(go.Scatter3d(x=Adam_points[:, 0], y=Adam_points[:, 1],z=Adam_points[:, 2],
                                 name="Adam"))
-    figure.write_html(os.path.join(settings.artifacts, f"BivarGaussian_TrainingPlot.html"))
+    figure.write_html(os.path.join(settings.artifacts, f"PathologicalCurve_TrainingPlot.html"))
